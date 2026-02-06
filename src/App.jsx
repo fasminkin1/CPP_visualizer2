@@ -192,6 +192,8 @@ function ControllerUnit({ config, position, nodeState }) {
   );
 }
 
+import TrafficLog from './components/TrafficLog';
+
 export default function App() {
   const { network, addNode, nodeStates, powerOn, currentTime, maxTime, isPlaying, togglePlay, seek } = useSimulationStore();
 
@@ -199,8 +201,8 @@ export default function App() {
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: '#fff', overflow: 'hidden' }}>
 
       {/* MAIN VIEWPORT */}
-      <div style={{ flex: 1, display: 'flex' }}>
-        <div style={{ width: '240px', padding: '20px', background: '#fff', borderRight: '1px solid #ddd', zIndex: 10 }}>
+      <div style={{ flex: 2, display: 'flex', minHeight: 0 }}>
+        <div style={{ width: '240px', padding: '20px', background: '#fff', borderRight: '1px solid #ddd', zIndex: 10, overflowY: 'auto' }}>
           <h2 style={{ fontSize: '1.2rem', marginBottom: '20px' }}>CANPro+</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button onClick={powerOn} style={{ padding: '12px', cursor: 'pointer', fontWeight: 'bold', background: '#4caf50', color: 'white', border: 'none', borderRadius: '4px' }}>POWER ON / RESET</button>
@@ -234,38 +236,42 @@ export default function App() {
         </div>
       </div>
 
-      {/* TIMELINE PANEL */}
-      <div style={{
-        height: '80px', background: '#f5f5f5', borderTop: '1px solid #ddd',
-        display: 'flex', alignItems: 'center', padding: '0 20px', gap: '20px'
-      }}>
+      {/* LOG & TIMELINE PANEL */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderTop: '1px solid #ccc', minHeight: '300px' }}>
 
-        <button onClick={togglePlay} style={{
-          width: '50px', height: '50px', borderRadius: '50%', border: 'none',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: isPlaying ? '#ff9800' : '#4caf50', color: 'white', fontSize: '24px', cursor: 'pointer'
+        {/* TIMELINE CONTROLS */}
+        <div style={{
+          height: '60px', background: '#f5f5f5', borderBottom: '1px solid #ddd',
+          display: 'flex', alignItems: 'center', padding: '0 20px', gap: '20px', flexShrink: 0
         }}>
-          {isPlaying ? '⏸' : '▶'}
-        </button>
+          <button onClick={togglePlay} style={{
+            width: '40px', height: '40px', borderRadius: '50%', border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: isPlaying ? '#ff9800' : '#4caf50', color: 'white', fontSize: '20px', cursor: 'pointer'
+          }}>
+            {isPlaying ? '⏸' : '▶'}
+          </button>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#333' }}>
-            <strong>Simulation Timeline</strong>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max={Math.max(0.1, maxTime)}
-            step="0.05"
-            value={currentTime}
-            onChange={(e) => seek(parseFloat(e.target.value))}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#888' }}>
-            <span>0.00s</span>
-            <span>{maxTime.toFixed(2)}s</span>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <input
+              type="range"
+              min="0"
+              max={Math.max(0.1, maxTime)}
+              step="0.05"
+              value={currentTime}
+              onChange={(e) => seek(parseFloat(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#666' }}>
+              <span>0.00s</span>
+              <span>{maxTime.toFixed(2)}s</span>
+            </div>
           </div>
         </div>
+
+        {/* TRAFFIC LOG */}
+        <TrafficLog />
+
       </div>
     </div>
   );

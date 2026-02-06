@@ -80,6 +80,7 @@ export const useSimulationStore = create((set, get) => ({
     },
 
     messages: [],
+    trafficLog: [],
 
     // Master Logic Internal State
     masterInternal: {
@@ -118,10 +119,13 @@ export const useSimulationStore = create((set, get) => ({
                 }
             });
 
+            const initialLog = initialMessages.map(m => ({ ...m, time: 0 }));
+
             return {
                 isPlaying: true,
                 currentTime: 0,
                 messages: initialMessages,
+                trafficLog: initialLog,
                 nodeStates: initNodeStates,
                 masterInternal: {
                     state: 'INIT_LOOP',
@@ -150,7 +154,11 @@ export const useSimulationStore = create((set, get) => ({
 
     sendMessage: (obj, dir, na, la, type, payload) => {
         const msg = createMessage(obj, dir, na, la, type, payload);
-        set(s => ({ messages: [...s.messages, msg] }));
+        const logEntry = { ...msg, time: get().currentTime };
+        set(s => ({
+            messages: [...s.messages, msg],
+            trafficLog: [logEntry, ...s.trafficLog] // Newest first
+        }));
     },
 
     // --- MAIN LOOP ---
