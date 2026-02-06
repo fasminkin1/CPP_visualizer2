@@ -1,5 +1,5 @@
 
-import { useSimulationStore, NODE_STATES, OBJ_TYPES, MSG_TYPES, DIR_TYPES } from '../store/simulationStore.js';
+import { useSimulationStore, NODE_STATES, OBJ_TYPES, MSG_TYPES, DIR_TYPES } from './store/simulationStore.js';
 
 // Polyfill for requestAnimationFrame if needed (Zustand doesn't use it directly usually, but good to know)
 // We are just calling tick(dt) manually.
@@ -26,10 +26,17 @@ function runTest() {
         process.exit(1);
     }
 
-    console.log("2. Running Init Loop (Simulating 5 seconds)...");
+    console.log("2. Running Init Loop (Simulating 20 seconds)...");
     // Tick enough times to cover delays
-    for (let i = 0; i < 50; i++) {
+    // ~2s per handshake roundtrip * 2 nodes * retries... let's give it plenty.
+    // 20s = 200 ticks at 0.1s
+    for (let i = 0; i < 200; i++) {
         step(0.1);
+        if (i % 20 === 0) {
+            const nodes = getState().network.filter(n => n.type !== 'MASTER');
+            const states = nodes.map(n => `n${n.na}:${getState().nodeStates[n.na].state}`).join(' ');
+            console.log(`[${(i * 0.1).toFixed(1)}s] Status: ${states}`);
+        }
     }
 
     masterState = getState().nodeStates[0];

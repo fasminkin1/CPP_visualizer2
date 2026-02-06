@@ -361,17 +361,46 @@ export const useSimulationStore = create((set, get) => ({
 
                 if (msg.obj === OBJ_TYPES.CFG) {
                     // MasterHandleCfg
+                    // DB Lookup (using TEMPLATES as our Source of Truth / DB)
+                    // We need to find what the node *should* be. 
+                    const expectedCfgLine = network.find(n => n.na === msg.na);
+                    // The payload for a node's config in this simple sim is likely the node definition itself or similar?
+                    // In SlaveInit, we see `nodeState.cfg` is initialized to NULL.
+                    // In MasterInitLoop, Master sends NULL.
+                    // In real PRO+, config is a struct. Here, let's assume the "Config" is the array of logical nodes "nodes" from the TEMPLATE.
+                    // Or specifically, it's the config FOR THAT LA.
+                    // Let's look at `TEMPLATES`.
+                    // A node (LA) config might be the object `{ la: 0, type: 'PHYS', ... }`.
+
+                    let expectedCfg = null;
+                    if (expectedCfgLine && expectedCfgLine.nodes) {
+                        const nodeDef = expectedCfgLine.nodes.find(n => n.la === msg.la);
+                        if (nodeDef) expectedCfg = nodeDef;
+                    }
+
+                    const cfgMatches = dataMatches(msg.payload, expectedCfg);
+
                     if (msg.type === MSG_TYPES.REQ) {
                         // TLA: if DataMatches(payload, db.cfg) -> ACK, unch shadow
                         //      else -> REQ, shadow.is_configured = FALSE
-                        // Simplified: Always ACK with what we think is right (or echo if we are loose)
-                        sendM(OBJ_TYPES.CFG, MSG_TYPES.ACK, msg.payload);
+                        if (cfgMatches) {
+                            sendM(OBJ_TYPES.CFG, MSG_TYPES.ACK, msg.payload);
+                        } else {
+                            // Correct the slave!
+                            masterState.shadow[targetKey].is_configured = false;
+                            sendM(OBJ_TYPES.CFG, MSG_TYPES.REQ, expectedCfg);
+                        }
                     } else if (msg.type === MSG_TYPES.ACK) {
                         // TLA: if DataMatches -> shadow.is_configured=TRUE, shadow.cfg=payload, Send OBJ_ERR ACK
                         //      else -> shadow.is_configured=FALSE, Send OBJ_CFG REQ
-                        shadow.is_configured = true;
-                        shadow.cfg = msg.payload;
-                        sendM(OBJ_TYPES.ERR, MSG_TYPES.ACK, null);
+                        if (cfgMatches) {
+                            shadow.is_configured = true;
+                            shadow.cfg = msg.payload;
+                            sendM(OBJ_TYPES.ERR, MSG_TYPES.ACK, null);
+                        } else {
+                            shadow.is_configured = false;
+                            sendM(OBJ_TYPES.CFG, MSG_TYPES.REQ, expectedCfg);
+                        }
                     }
 
                 } else if (msg.obj === OBJ_TYPES.ERR) {
